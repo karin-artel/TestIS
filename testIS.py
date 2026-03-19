@@ -18,13 +18,19 @@ server = "LAPTOP-HAYA\SQL2016ST"
 
 licensed_db = "Karin_Lucy_LH"
 
-apps = [ "ActiveUsers.exe", "BAR.exe", "ConfigurationEditor.exe", "DatabaseChecking.exe", "DatabasePurging.exe", 
-        "DataScience.exe", "FormulaEditor.exe", "HierarchyManager.exe", "IntegrationBuilder.exe", "LoadData.exe", 
-        "LogAnalyzer.exe", "Maintenance.exe", "Planner.exe", "SystemBuilder.exe", "ToolboxDesktop.exe", "UserManagement.exe"]   
+apps = [ "ActiveUsers.exe", "BAR.exe", "ConfigurationEditor.exe", "DatabaseChecking.exe", 
+        "DatabasePurging.exe", "DataScience.exe", "FormulaEditor.exe", "HierarchyManager.exe", 
+        "IntegrationBuilder.exe", "LoadData.exe", "LogAnalyzer.exe", "Maintenance.exe", 
+        "Planner.exe", "SystemBuilder.exe", "ToolboxDesktop.exe", "UserManagement.exe"]   
+
+help_files = ["AdministrativeGuide", "DatabaseChecking", "HierarchyManager.chm", "InputFileBuilder", 
+              "IntegrationBuilder", "LoadData", "MainConcept", "Maintenance", "Planner", "UserManagement"]
 
 tb_version = "4.3.5"
 
 window = tk.Tk()
+window.geometry("500x870")
+window.resizable(False, False)
 title = tk.Label(text="Toolbox AP Installation Validation", font=("Arial", 16))
 title.pack(pady=10, anchor=tk.W)
 
@@ -52,23 +58,55 @@ version_entry = tk.Entry(version_frame, width=7)
 version_entry.pack(side = tk.LEFT, padx=10)
 version_entry.insert(0, tb_version)
 
-#checkboxes for applications
-chechbox_frame = tk.Frame(window)
-chechbox_frame.pack(pady=20)
-checkbox_label = tk.Label(chechbox_frame, text="Select applications to check:")
-checkbox_label.pack()
+
+#resizable columns for applications & helps
+selector_frame = tk.Frame(window)
+selector_frame.pack(pady=10, fill="x")
+
+left_col = tk.Frame(selector_frame)
+left_col.pack(side="left", anchor="n", padx=20)
+
+right_col = tk.Frame(selector_frame)
+right_col.pack(side="right", anchor="n", padx=20)
+
+apps_btn = tk.Button(left_col, text="Applications ▼",
+                     command=lambda: toggle(apps_list, tk.W))
+apps_btn.pack(anchor=tk.W)
 app_vars = {}
+
+apps_list = tk.Frame(left_col)
+apps_list.pack(anchor=tk.W)
+
 for app in apps:
-    var = tk.BooleanVar(value=True)  # Default checked
+    var = tk.BooleanVar(value=True)
     app_vars[app] = var
-    checkbox = tk.Checkbutton(chechbox_frame, text=app, variable=var)
-    checkbox.pack(anchor=tk.W, padx=20)
+    tk.Checkbutton(apps_list, text=app, variable=var).pack(anchor=tk.W)
 
-frame4 = tk.Frame(window)
-frame4.pack(pady=20)
+help_btn = tk.Button(right_col, text="Help ▼",
+                     command=lambda: toggle(help_list, tk.E))
+help_btn.pack(anchor=tk.E)
 
-run_tests_btn = tk.Button(frame4, bg="#4CAF50", fg="white", text="Run Tests")
-run_tests_btn.pack(side=tk.LEFT, padx=10)
+help_list = tk.Frame(right_col)
+help_list.pack(anchor=tk.E)
+
+help_vars = {}
+
+for help_file in help_files:
+    var = tk.BooleanVar(value=True)
+    help_vars[help_file] = var
+    tk.Checkbutton(help_list, text=help_file, variable=var).pack(anchor=tk.E)
+
+def toggle(frame, anchor):
+    if frame.winfo_viewable():
+        frame.pack_forget()
+    else:
+        frame.pack(anchor=anchor)
+
+run_frame = tk.Frame(window)
+run_frame.pack(pady=20)
+
+run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
+run_btn.pack(side=tk.LEFT, padx=10)
 
 #========================================================================================================================================
 #Check if all files are present (exe, Help, config, etc.)
@@ -160,7 +198,7 @@ def main():
 
 
 #the function check_dirs() is triggered when the "Run Tests" button is clicked
-run_tests_btn.config(command=lambda: main())
+run_btn.config(command=lambda: main())
 
 # START the GUI
 window.mainloop()
