@@ -3,10 +3,8 @@ import subprocess
 import time, datetime   
 import tkinter as tk
 import win32api
+import re
 
-#========================================================================================================================================
-#Build a form and input the parameters (directory where IS puts Toolbox, server, database to check with etc.)
-#========================================================================================================================================
 
 #directory where the IS puts Toolbox
 dir_IS = "d:\\Toolbox AP\\"
@@ -28,19 +26,26 @@ help_files = ["AdministrativeGuide", "DatabaseChecking", "HierarchyManager.chm",
 
 tb_version = "4.3.5"
 
+#========================================================================================================================================
+#Configure UI, get user input for the global parameters (directories, version, apps, help files to check)
+#========================================================================================================================================
 window = tk.Tk()
 window.geometry("500x870")
 window.resizable(False, False)
 title = tk.Label(text="Toolbox AP Installation Validation", font=("Arial", 16))
 title.pack(pady=10, anchor=tk.W)
 
-dir_IS_frame = tk.Frame(window)
-dir_IS_frame.pack(pady=20, anchor=tk.W)
-dir_IS_label = tk.Label(dir_IS_frame, width=25, text="Installation directory: ")
-dir_IS_label.pack(side = tk.LEFT, padx=10)
-dir_IS_entry = tk.Entry(dir_IS_frame, width=30)
-dir_IS_entry.pack(side = tk.LEFT, padx=10)
-dir_IS_entry.insert(0, dir_IS)
+dir_IS_frame = tk.Frame(window) 
+dir_IS_frame.pack(pady=20, anchor=tk.W) 
+dir_IS_label = tk.Label(dir_IS_frame, width=25, text="Installation directory: ") 
+dir_IS_label.pack(side = tk.LEFT, padx=10) 
+dir_IS_entry = tk.Entry(dir_IS_frame, width=30) 
+dir_IS_entry.pack(side = tk.LEFT, padx=10) 
+dir_IS_entry.insert(0, dir_IS) 
+dir_IS_error = tk.Label(dir_IS_frame, text="", fg="white") 
+dir_IS_error.pack(anchor=tk.W)
+dir_IS_entry.bind("<Return>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
+dir_IS_entry.bind("<FocusOut>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
 
 dir_compareto_frame = tk.Frame(window)
 dir_compareto_frame.pack(pady=20, anchor=tk.W)
@@ -49,6 +54,10 @@ dir_compareto_label.pack(side = tk.LEFT, padx=10)
 dir_compareto_entry = tk.Entry(dir_compareto_frame, width=30)
 dir_compareto_entry.pack(side = tk.LEFT, padx=10)
 dir_compareto_entry.insert(0, dir_compareto)
+dir_compareto_error = tk.Label(dir_compareto_frame, text="", fg="red")
+dir_compareto_error.pack(anchor=tk.W)
+dir_compareto_entry.bind("<Return>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
+dir_compareto_entry.bind("<FocusOut>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
 
 version_frame = tk.Frame(window)
 version_frame.pack(pady=10, anchor=tk.CENTER)
@@ -57,7 +66,10 @@ version_label.pack(side = tk.LEFT, padx=10)
 version_entry = tk.Entry(version_frame, width=7)
 version_entry.pack(side = tk.LEFT, padx=10)
 version_entry.insert(0, tb_version)
-
+version_error = tk.Label(version_frame, text="", fg="red")
+version_error.pack(anchor=tk.W, padx=35)
+version_entry.bind("<Return>", lambda e: validate_version())
+version_entry.bind("<FocusOut>", lambda e: validate_version())
 
 #resizable columns for applications & helps
 selector_frame = tk.Frame(window)
@@ -108,6 +120,37 @@ run_frame.pack(pady=20)
 run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
 run_btn.pack(side=tk.LEFT, padx=10)
 
+def validate_directory(entry, error_label, var_name):
+    global dir_IS, dir_compareto
+
+    path = entry.get().strip()
+
+    if not os.path.isdir(path):
+        entry.config(bg="#ffcccc")
+        #error_label.config(text="Directory does not exist")
+    else:
+        entry.config(bg="white")
+        error_label.config(text="", fg="red")  #hide error message
+
+        if var_name == "dir_IS":
+            dir_IS = path
+        elif var_name == "dir_compareto":
+            dir_compareto = path
+
+
+def validate_version(event=None):
+    global tb_version
+
+    version = version_entry.get().strip()
+
+    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        version_entry.config(bg="#ffcccc")
+        version_error.config(text="Version must be in format x.y.z")
+    else:
+        version_entry.config(bg="white")
+        version_error.config(text="")
+        tb_version = version
+
 #========================================================================================================================================
 #Check if all files are present (exe, Help, config, etc.)
 #========================================================================================================================================
@@ -121,22 +164,42 @@ failures = open(os.path.join(dir_IS, "failures.log"), "a")   #write only if a ch
 
 def check_apps():
     for app in apps:
-            app_path = os.path.join(dir_IS, app)
-            if not os.path.exists(app_path):
-                    print(f"{app} not found")
-                    all_checks.write(f"{app} not found\n")
-                    failures.write(f"{app} not found\n")
+        app_path = os.path.join(dir_IS, app)
+
+        if not os.path.exists(app_path):
+            print(f"{app} not found")
+            all_checks.write(f"{app} not found\n")
+            failures.write(f"{app} not found\n")
+        else:
+            try:
+                info = win32api.GetFileVersionInfo(app_path, '\\')
+                ms = info['FileVersionMS']
+                ls = info['FileVersionLS']
+                app_version = f"{ms >> 16}.{ms & 0xFFFF}.{ls >> 16}.{ls & 0xFFFF}"
+            except Exception as e:
+                print(f"Error getting version for {app}: {e}")                   
+            
+            if not app_version.startswith(tb_version):
+                msg = f"{app} version mismatch: {app_version} (expected {tb_version}.x)"
+                print(msg)
+                all_checks.write(msg + "\n")
+                failures.write(msg + "\n")
             else:
-                    try:
-                        info = win32api.GetFileVersionInfo(app_path, "\\")
-                        app_version = info['FileVersion']
-                    except Exception as e:
-                        print(f"Error getting version for {app}: {e}")
-                    
+                all_checks.write(f"{app} version OK: {app_version}\n")
 
 
-'''dir1 is IS, dir2 is compareto. compare dir1 to dir2, report missing files and size mismatches'''
 def compare_dirs(dir1, dir2): 
+    """
+    Compare files in the installation directory with a reference directory.
+
+    The function reports:
+    - missing files
+    - extra files
+    - file size mismatches
+
+    It also validates that the versions of application executables
+    match the expected Toolbox version (tb_version).
+    """
     files_IS = {f: os.path.getsize(os.path.join(dir1, f)) 
             for f in os.listdir(dir1) if os.path.isfile(os.path.join(dir1, f))}
 
@@ -161,16 +224,23 @@ def compare_dirs(dir1, dir2):
             mismatches.append(f"{file} - Extra file in comparison directory")
 
     # Print mismatches
+    dir_name = os.path.basename(dir1)
     if mismatches:
-        print("Files that do not match:")
+        print(f"Files that do not match: in folder {dir_name}: ")
         for mismatch in mismatches:
             print(mismatch)
     else:
-        print("All files match!")
+        print(f"All files match in folder {dir_name}.")
 
 
-#compare Helps, configs in Toolbox file, texts, sql, data
 def check_dirs():
+    """
+    Compare key Toolbox subdirectories between the installation directory
+    (dir_IS) and the reference directory (dir_compareto).
+
+    The function verifies that files in Help, ToolboxSystem, Texts, CreateDBSql,
+    and Data match between the two locations.
+    """
     dir_IS_help = os.path.join(dir_IS, "Help")
     dir_compareto_help = os.path.join(dir_compareto, "Help")
     compare_dirs(dir_IS_help, dir_compareto_help)
