@@ -1,4 +1,6 @@
-#alter _ToolBoxUser.config", move it to the root of Toolbox AP
+#===============================================================================================
+#run apps
+#===============================================================================================
 from asyncio import subprocess
 import os
 from time import time
@@ -53,3 +55,50 @@ for app in apps:
         app_name = app.replace(".exe", "")
         os.system(f"taskkill /IM {app} /F")
         
+
+
+#==================================================================================================
+#collapsible columns
+#==================================================================================================
+#resizable columns for applications & helps
+selector_frame = tk.Frame(window)
+selector_frame.pack(pady=10, fill="x")
+
+left_col = tk.Frame(selector_frame)
+left_col.pack(side="left", anchor="n", padx=20)
+
+right_col = tk.Frame(selector_frame)
+right_col.pack(side="right", anchor="n", padx=20)
+
+apps_btn = tk.Button(left_col, text="Applications ▼",
+                     command=lambda: toggle(apps_list, tk.W))
+apps_btn.pack(anchor=tk.W)
+app_vars = {}
+
+apps_list = tk.Frame(left_col)
+apps_list.pack(anchor=tk.W)
+
+for app in apps:
+    var = tk.BooleanVar(value=True)
+    app_vars[app] = var
+    tk.Checkbutton(apps_list, text=app, variable=var).pack(anchor=tk.W)
+
+help_btn = tk.Button(right_col, text="Help ▼",
+                     command=lambda: toggle(help_list, tk.E))
+help_btn.pack(anchor=tk.E)
+
+help_list = tk.Frame(right_col)
+help_list.pack(anchor=tk.E)
+
+help_vars = {}
+
+for help_file in help_files:
+    var = tk.BooleanVar(value=True)
+    help_vars[help_file] = var
+    tk.Checkbutton(help_list, text=help_file, variable=var).pack(anchor=tk.E)
+
+def toggle(frame, anchor):
+    if frame.winfo_viewable():
+        frame.pack_forget()
+    else:
+        frame.pack(anchor=anchor)
