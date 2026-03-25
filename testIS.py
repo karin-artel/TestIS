@@ -12,6 +12,8 @@ dir_IS = "d:\\Toolbox AP\\"
 #directory with Toolbox installed correctly
 dir_compareto = "d:\\Toolbox\\tb_435\\"
 
+dir_logs = "d:"
+
 server = "LAPTOP-HAYA\SQL2016ST"
 
 licensed_db = "Karin_Lucy_LH"
@@ -30,8 +32,7 @@ tb_version = "4.3.5"
 #Configure UI, get user input for the global parameters (directories, version, apps, help files to check)
 #========================================================================================================================================
 window = tk.Tk()
-window.geometry("500x870")
-window.resizable(False, False)
+window.geometry()
 title = tk.Label(text="Toolbox AP Installation Validation", font=("Arial", 16))
 title.pack(pady=10, anchor=tk.W)
 
@@ -59,6 +60,18 @@ dir_compareto_error.pack(anchor=tk.W)
 dir_compareto_entry.bind("<Return>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
 dir_compareto_entry.bind("<FocusOut>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
 
+dir_logs_frame = tk.Frame(window)
+dir_logs_frame.pack(pady=20, anchor=tk.W)
+dir_logs_label = tk.Label(dir_logs_frame, width=25, text="Logs directory: ")
+dir_logs_label.pack(side = tk.LEFT, padx=10)
+dir_logs_entry = tk.Entry(dir_logs_frame, width=30)
+dir_logs_entry.pack(side = tk.LEFT, padx=10)
+dir_logs_entry.insert(0, dir_logs)
+dir_logs_error = tk.Label(dir_logs_frame, text="", fg="red")
+dir_logs_error.pack(anchor=tk.W)
+dir_logs_entry.bind("<Return>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
+dir_logs_entry.bind("<FocusOut>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
+
 version_frame = tk.Frame(window)
 version_frame.pack(pady=10, anchor=tk.CENTER)
 version_label = tk.Label(version_frame, width=15, text="Toolbox version: ")
@@ -71,49 +84,6 @@ version_error.pack(anchor=tk.W, padx=35)
 version_entry.bind("<Return>", lambda e: validate_version())
 version_entry.bind("<FocusOut>", lambda e: validate_version())
 
-#resizable columns for applications & helps
-selector_frame = tk.Frame(window)
-selector_frame.pack(pady=10, fill="x")
-
-left_col = tk.Frame(selector_frame)
-left_col.pack(side="left", anchor="n", padx=20)
-
-right_col = tk.Frame(selector_frame)
-right_col.pack(side="right", anchor="n", padx=20)
-
-apps_btn = tk.Button(left_col, text="Applications ▼",
-                     command=lambda: toggle(apps_list, tk.W))
-apps_btn.pack(anchor=tk.W)
-app_vars = {}
-
-apps_list = tk.Frame(left_col)
-apps_list.pack(anchor=tk.W)
-
-for app in apps:
-    var = tk.BooleanVar(value=True)
-    app_vars[app] = var
-    tk.Checkbutton(apps_list, text=app, variable=var).pack(anchor=tk.W)
-
-help_btn = tk.Button(right_col, text="Help ▼",
-                     command=lambda: toggle(help_list, tk.E))
-help_btn.pack(anchor=tk.E)
-
-help_list = tk.Frame(right_col)
-help_list.pack(anchor=tk.E)
-
-help_vars = {}
-
-for help_file in help_files:
-    var = tk.BooleanVar(value=True)
-    help_vars[help_file] = var
-    tk.Checkbutton(help_list, text=help_file, variable=var).pack(anchor=tk.E)
-
-def toggle(frame, anchor):
-    if frame.winfo_viewable():
-        frame.pack_forget()
-    else:
-        frame.pack(anchor=anchor)
-
 run_frame = tk.Frame(window)
 run_frame.pack(pady=20)
 
@@ -121,7 +91,7 @@ run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
 run_btn.pack(side=tk.LEFT, padx=10)
 
 def validate_directory(entry, error_label, var_name):
-    global dir_IS, dir_compareto
+    global dir_IS, dir_compareto, dir_logs
 
     path = entry.get().strip()
 
@@ -136,6 +106,8 @@ def validate_directory(entry, error_label, var_name):
             dir_IS = path
         elif var_name == "dir_compareto":
             dir_compareto = path
+        elif var_name == "dir_logs":
+            dir_logs = path
 
 
 def validate_version(event=None):
@@ -155,13 +127,34 @@ def validate_version(event=None):
 #Check if all files are present (exe, Help, config, etc.)
 #========================================================================================================================================
 def create_log_files():
-    if os.path.exists(os.path.join(dir_IS, "all_checks.log")):
-        os.remove(os.path.join(dir_IS, "all_checks.log"))
-    if os.path.exists(os.path.join(dir_IS, "failures.log")):
-        os.remove(os.path.join(dir_IS, "failures.log"))
-    all_checks = open(os.path.join(dir_IS, "all_checks.log"), "a")  #write everything that was checked + result
-    failures = open(os.path.join(dir_IS, "failures.log"), "a")   #write only if a check didn't pass
-    return all_checks, failures
+    print(dir_logs)
+    # Make sure the directory exists
+    try:
+        if not os.path.exists(dir_logs):
+            os.makedirs(dir_logs)
+            print(f"Created directory: {dir_logs}")
+    except Exception as e:
+        print(f"Error creating directory {dir_logs}: {e}")
+        return None, None
+    
+    # Remove old log files
+    try:
+        if os.path.exists(os.path.join(dir_logs, "all_checks.log")):
+            os.remove(os.path.join(dir_logs, "all_checks.log"))
+        if os.path.exists(os.path.join(dir_logs, "failures.log")):
+            os.remove(os.path.join(dir_logs, "failures.log"))
+    except Exception as e:
+        print(f"Error removing old log files: {e}")
+    
+    # Create new log files in append mode (empty files ready for appending)
+    try:
+        all_checks = open(os.path.join(dir_logs, "all_checks.log"), "a")
+        failures = open(os.path.join(dir_logs, "failures.log"), "a")
+        print(f"Log files created in: {dir_logs}")
+        return all_checks, failures
+    except Exception as e:
+        print(f"Error creating log files: {e}")
+        return None, None
 
 
 def check_apps():
