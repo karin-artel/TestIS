@@ -154,15 +154,18 @@ def validate_version(event=None):
 #========================================================================================================================================
 #Check if all files are present (exe, Help, config, etc.)
 #========================================================================================================================================
-if os.path.exists(os.path.join(dir_IS, "all_checks.log")):
-    os.remove(os.path.join(dir_IS, "all_checks.log"))
-if os.path.exists(os.path.join(dir_IS, "failures.log")):
-    os.remove(os.path.join(dir_IS, "failures.log"))
+def create_log_files():
+    if os.path.exists(os.path.join(dir_IS, "all_checks.log")):
+        os.remove(os.path.join(dir_IS, "all_checks.log"))
+    if os.path.exists(os.path.join(dir_IS, "failures.log")):
+        os.remove(os.path.join(dir_IS, "failures.log"))
+    all_checks = open(os.path.join(dir_IS, "all_checks.log"), "a")  #write everything that was checked + result
+    failures = open(os.path.join(dir_IS, "failures.log"), "a")   #write only if a check didn't pass
+    return all_checks, failures
 
-all_checks = open(os.path.join(dir_IS, "all_checks.log"), "a")  #write everything that was checked + result
-failures = open(os.path.join(dir_IS, "failures.log"), "a")   #write only if a check didn't pass
 
 def check_apps():
+    all_checks, failures = create_log_files()
     for app in apps:
         app_path = os.path.join(dir_IS, app)
 
@@ -263,6 +266,7 @@ def check_dirs():
 
 
 def main():
+    create_log_files()
     check_apps()
     check_dirs()
 
