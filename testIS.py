@@ -12,7 +12,7 @@ dir_IS = "d:\\Toolbox AP\\"
 #directory with Toolbox installed correctly
 dir_compareto = "d:\\Toolbox\\tb_435\\"
 
-dir_logs = "d:"
+dir_logs = "d:\\logs\\"
 
 server = "LAPTOP-HAYA\SQL2016ST"
 
@@ -77,12 +77,14 @@ version_frame.pack(pady=10, anchor=tk.CENTER)
 version_label = tk.Label(version_frame, width=15, text="Toolbox version: ")
 version_label.pack(side = tk.LEFT, padx=10)
 version_entry = tk.Entry(version_frame, width=7)
-version_entry.pack(side = tk.LEFT, padx=10)
+version_entry.pack(side = tk.LEFT, padx=0)
 version_entry.insert(0, tb_version)
-version_error = tk.Label(version_frame, text="", fg="red")
-version_error.pack(anchor=tk.W, padx=35)
 version_entry.bind("<Return>", lambda e: validate_version())
 version_entry.bind("<FocusOut>", lambda e: validate_version())
+version_error_frame = tk.Frame(window)
+version_error_frame.pack(pady=0, anchor=tk.E) 
+version_error = tk.Label(version_error_frame, text="", fg="red")
+version_error.pack()
 
 run_frame = tk.Frame(window)
 run_frame.pack(pady=20)
@@ -90,10 +92,39 @@ run_frame.pack(pady=20)
 run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
 run_btn.pack(side=tk.LEFT, padx=10)
 
+
+def check_all_valid():
+    """Check if all inputs are valid and enable/disable Run button"""
+    # Check dir_IS
+    dir_IS_valid = os.path.isdir(dir_IS_entry.get().strip())
+    
+    # Check dir_compareto
+    dir_compareto_valid = os.path.isdir(dir_compareto_entry.get().strip())
+    
+    # Check dir_logs
+    dir_logs_valid = os.path.isdir(dir_logs_entry.get().strip())
+    
+    # Check version format
+    version = version_entry.get().strip()
+    version_valid = re.fullmatch(r"[\d.]+", version) and not version.startswith(".") and not version.endswith(".")
+    
+    # Enable button only if all are valid
+    if dir_IS_valid and dir_compareto_valid and dir_logs_valid and version_valid:
+        run_btn.config(state=tk.NORMAL, bg="#4CAF50")
+    else:
+        run_btn.config(state=tk.DISABLED, bg="#cccccc")
+
+
 def validate_directory(entry, error_label, var_name):
     global dir_IS, dir_compareto, dir_logs
 
     path = entry.get().strip()
+
+    # Automatically add backslash if missing
+    if path and not path.endswith("\\"):
+        path = path + "\\"
+        entry.delete(0, tk.END)
+        entry.insert(0, path)
 
     if not os.path.isdir(path):
         entry.config(bg="#ffcccc")
@@ -108,6 +139,7 @@ def validate_directory(entry, error_label, var_name):
             dir_compareto = path
         elif var_name == "dir_logs":
             dir_logs = path
+    check_all_valid()
 
 
 def validate_version(event=None):
@@ -115,13 +147,17 @@ def validate_version(event=None):
 
     version = version_entry.get().strip()
 
-    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+    if not re.fullmatch(r"[\d.]+", version):
         version_entry.config(bg="#ffcccc")
-        version_error.config(text="Version must be in format x.y.z")
+        version_error.config(text="Version must contain only numbers and dots")
+    elif version.startswith(".") or version.endswith("."):
+        version_entry.config(bg="#ffcccc")
+        version_error.config(text="Version cannot start or end with a dot")
     else:
         version_entry.config(bg="white")
         version_error.config(text="")
         tb_version = version
+    check_all_valid()
 
 #========================================================================================================================================
 #Check if all files are present (exe, Help, config, etc.)
