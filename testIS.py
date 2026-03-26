@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import time, datetime   
 import tkinter as tk
 import win32api
@@ -93,6 +94,19 @@ run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
 run_btn.pack(side=tk.LEFT, padx=10)
 
 
+class TextRedirector(object):
+    def __init__(self, text_widget):
+        self.text_widget = text_widget
+
+    def write(self, message):
+        self.text_widget.insert(tk.END, message)
+        self.text_widget.see(tk.END)  # Auto-scroll to bottom
+        self.text_widget.update()
+
+    def flush(self):
+        pass
+
+
 def check_all_valid():
     """Check if all inputs are valid and enable/disable Run button"""
     # Check dir_IS
@@ -159,6 +173,15 @@ def validate_version(event=None):
         tb_version = version
     check_all_valid()
 
+
+def create_output_window():
+    output_window = tk.Toplevel(window)
+    output_window.title("Test Results")
+    output_window.geometry("700x400")
+    output_text = tk.Text(output_window, bg="white", fg="black", font=("Courier", 10))
+    output_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    old_stdout = sys.stdout     #redirect output to the text widget
+    sys.stdout = TextRedirector(output_text)
 #========================================================================================================================================
 #Check if all files are present (exe, Help, config, etc.)
 #========================================================================================================================================
@@ -168,7 +191,6 @@ def create_log_files():
     try:
         if not os.path.exists(dir_logs):
             os.makedirs(dir_logs)
-            print(f"Created directory: {dir_logs}")
     except Exception as e:
         print(f"Error creating directory {dir_logs}: {e}")
         return None, None
@@ -186,7 +208,6 @@ def create_log_files():
     try:
         all_checks = open(os.path.join(dir_logs, "all_checks.log"), "a")
         failures = open(os.path.join(dir_logs, "failures.log"), "a")
-        print(f"Log files created in: {dir_logs}")
         return all_checks, failures
     except Exception as e:
         print(f"Error creating log files: {e}")
@@ -296,6 +317,7 @@ def check_dirs():
 
 def main():
     create_log_files()
+    create_output_window()
     check_apps()
     check_dirs()
 
