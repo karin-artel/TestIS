@@ -89,9 +89,15 @@ version_error.pack()
 
 run_frame = tk.Frame(window)
 run_frame.pack(pady=20)
-
 run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
 run_btn.pack(side=tk.LEFT, padx=10)
+
+logs_frame = tk.Frame(window)
+logs_frame.pack(pady=10)
+check_all_btn = tk.Button(logs_frame, text="View all_checks.log", state=tk.DISABLED, command=lambda: open_log_file("all_checks.log"))
+check_all_btn.pack(side=tk.LEFT, padx=5)
+failures_btn = tk.Button(logs_frame, text="View failures.log", state=tk.DISABLED, command=lambda: open_log_file("failures.log"))
+failures_btn.pack(side=tk.LEFT, padx=5)
 
 
 class TextRedirector(object):
@@ -105,6 +111,28 @@ class TextRedirector(object):
 
     def flush(self):
         pass
+
+
+def open_log_file(filename):
+    """Open log file with default application"""
+    log_path = os.path.join(dir_logs, filename)
+    if os.path.exists(log_path) and os.path.getsize(log_path) > 0:
+        import subprocess
+        subprocess.Popen(f'notepad "{log_path}"')  # Opens with Notepad on Windows
+    else:
+        print(f"Log file {filename} not found or is empty")
+
+
+def update_log_buttons():
+    """Enable log buttons if files exist and are non-empty"""
+    all_checks_path = os.path.join(dir_logs, "all_checks.log")
+    failures_path = os.path.join(dir_logs, "failures.log")
+    
+    all_checks_valid = os.path.exists(all_checks_path) and os.path.getsize(all_checks_path) > 0
+    failures_valid = os.path.exists(failures_path) and os.path.getsize(failures_path) > 0
+    
+    check_all_btn.config(state=tk.NORMAL if all_checks_valid else tk.DISABLED)
+    failures_btn.config(state=tk.NORMAL if failures_valid else tk.DISABLED)
 
 
 def check_all_valid():
@@ -182,6 +210,7 @@ def create_output_window():
     output_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
     old_stdout = sys.stdout     #redirect output to the text widget
     sys.stdout = TextRedirector(output_text)
+
 #========================================================================================================================================
 #Check if all files are present (exe, Help, config, etc.)
 #========================================================================================================================================
@@ -320,6 +349,7 @@ def main():
     create_output_window()
     check_apps()
     check_dirs()
+    update_log_buttons()
 
 
 #the function check_dirs() is triggered when the "Run Tests" button is clicked
