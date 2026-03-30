@@ -99,6 +99,9 @@ check_all_btn.pack(side=tk.LEFT, padx=5)
 failures_btn = tk.Button(logs_frame, text="View failures.log", state=tk.DISABLED, command=lambda: open_log_file("failures.log"))
 failures_btn.pack(side=tk.LEFT, padx=5)
 
+#Log files, set to None, created in create_log_files()
+all_checks = None
+failures = None
 
 class TextRedirector(object):
     def __init__(self, text_widget):
@@ -206,8 +209,15 @@ def create_output_window():
     output_window = tk.Toplevel(window)
     output_window.title("Test Results")
     output_window.geometry("700x400")
-    output_text = tk.Text(output_window, bg="white", fg="black", font=("Courier", 10))
-    output_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    output_frame = tk.Frame(output_window)
+    output_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+    scrollbar = tk.Scrollbar(output_frame)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    # Create text widget and link to scrollbar
+    output_text = tk.Text(output_frame, bg="white", fg="black", font=("Courier", 10), yscrollcommand=scrollbar.set)
+    output_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+    scrollbar.config(command=output_text.yview)
     old_stdout = sys.stdout     #redirect output to the text widget
     sys.stdout = TextRedirector(output_text)
 
@@ -215,6 +225,8 @@ def create_output_window():
 #Check if all files are present (exe, Help, config, etc.)
 #========================================================================================================================================
 def create_log_files():
+    global all_checks, failures
+    
     print(dir_logs)
     # Make sure the directory exists
     try:
@@ -222,7 +234,7 @@ def create_log_files():
             os.makedirs(dir_logs)
     except Exception as e:
         print(f"Error creating directory {dir_logs}: {e}")
-        return None, None
+        return False
     
     # Remove old log files
     try:
@@ -233,18 +245,17 @@ def create_log_files():
     except Exception as e:
         print(f"Error removing old log files: {e}")
     
-    # Create new log files in append mode (empty files ready for appending)
+    # Create new log files in append mode
     try:
         all_checks = open(os.path.join(dir_logs, "all_checks.log"), "a")
         failures = open(os.path.join(dir_logs, "failures.log"), "a")
-        return all_checks, failures
+        return True
     except Exception as e:
         print(f"Error creating log files: {e}")
-        return None, None
-
+        return False
+    
 
 def check_apps():
-    all_checks, failures = create_log_files()
     for app in apps:
         app_path = os.path.join(dir_IS, app)
 
@@ -268,6 +279,7 @@ def check_apps():
                 failures.write(msg + "\n")
             else:
                 all_checks.write(f"{app} version OK: {app_version}\n")
+    print()
 
 
 def compare_dirs(dir1, dir2): 
@@ -296,10 +308,6 @@ def compare_dirs(dir1, dir2):
         elif files_compareto[file] != size:
             mismatches.append(f"{file} - Size mismatch (IS: {size} bytes, Compare: {files_compareto[file]} bytes)")
 
-    for file in files_compareto:
-        if file not in files_IS:
-            mismatches.append(f"{file} - Extra file in comparison directory")
-
     # Check for files in dir_compareto_help that don't exist in dir_IS_help
     for file in files_compareto:
         if file not in files_IS:
@@ -313,6 +321,7 @@ def compare_dirs(dir1, dir2):
             print(mismatch)
     else:
         print(f"All files match in folder {dir_name}.")
+    print()
 
 
 def check_dirs():
