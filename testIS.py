@@ -227,7 +227,6 @@ def create_output_window():
 def create_log_files():
     global all_checks, failures
     
-    print(dir_logs)
     # Make sure the directory exists
     try:
         if not os.path.exists(dir_logs):
@@ -253,9 +252,9 @@ def create_log_files():
     except Exception as e:
         print(f"Error creating log files: {e}")
         return False
-    
+        
 
-def check_apps():
+def check_apps(all_checks, failures):
     for app in apps:
         app_path = os.path.join(dir_IS, app)
 
@@ -280,19 +279,14 @@ def check_apps():
             else:
                 all_checks.write(f"{app} version OK: {app_version}\n")
     print()
+    all_checks.flush()
+    failures.flush()
 
 
-def compare_dirs(dir1, dir2): 
+
+def compare_dirs(dir1, dir2, all_checks, failures):
     """
     Compare files in the installation directory with a reference directory.
-
-    The function reports:
-    - missing files
-    - extra files
-    - file size mismatches
-
-    It also validates that the versions of application executables
-    match the expected Toolbox version (tb_version).
     """
     files_IS = {f: os.path.getsize(os.path.join(dir1, f)) 
             for f in os.listdir(dir1) if os.path.isfile(os.path.join(dir1, f))}
@@ -308,57 +302,68 @@ def compare_dirs(dir1, dir2):
         elif files_compareto[file] != size:
             mismatches.append(f"{file} - Size mismatch (IS: {size} bytes, Compare: {files_compareto[file]} bytes)")
 
-    # Check for files in dir_compareto_help that don't exist in dir_IS_help
     for file in files_compareto:
         if file not in files_IS:
             mismatches.append(f"{file} - Extra file in comparison directory")
 
-    # Print mismatches
     dir_name = os.path.basename(dir1)
     if mismatches:
         print(f"Files that do not match: in folder {dir_name}: ")
+        all_checks.write(f"Files that do not match: in folder {dir_name}:\n")
         for mismatch in mismatches:
             print(mismatch)
+            all_checks.write(f"{mismatch}\n")
+            failures.write(f"{mismatch}\n")
     else:
-        print(f"All files match in folder {dir_name}.")
+        msg = f"All files match in folder {dir_name}."
+        print(msg)
+        all_checks.write(f"{msg}\n")
     print()
+    all_checks.flush()
+    failures.flush()
 
 
-def check_dirs():
+def check_dirs(all_checks, failures):
     """
     Compare key Toolbox subdirectories between the installation directory
     (dir_IS) and the reference directory (dir_compareto).
-
-    The function verifies that files in Help, ToolboxSystem, Texts, CreateDBSql,
-    and Data match between the two locations.
     """
     dir_IS_help = os.path.join(dir_IS, "Help")
     dir_compareto_help = os.path.join(dir_compareto, "Help")
-    compare_dirs(dir_IS_help, dir_compareto_help)
+    compare_dirs(dir_IS_help, dir_compareto_help, all_checks, failures)
 
     dir_IS_toolbox = os.path.join(dir_IS, "ToolboxSystem")
     dir_compareto_toolbox = os.path.join(dir_compareto, "ToolboxSystem")
-    compare_dirs(dir_IS_toolbox, dir_compareto_toolbox)
+    compare_dirs(dir_IS_toolbox, dir_compareto_toolbox, all_checks, failures)
 
     dir_IS_texts = os.path.join(dir_IS, "ToolboxSystem\\Texts\\en-Us")
     dir_compareto_texts = os.path.join(dir_compareto, "ToolboxSystem\\Texts\\en-Us")
-    compare_dirs(dir_IS_texts, dir_compareto_texts)
+    compare_dirs(dir_IS_texts, dir_compareto_texts, all_checks, failures)
 
     dir_IS_sql = os.path.join(dir_IS, "CreateDBSql")
     dir_compareto_sql = os.path.join(dir_compareto, "CreateDBSql")
-    compare_dirs(dir_IS_sql, dir_compareto_sql)
+    compare_dirs(dir_IS_sql, dir_compareto_sql, all_checks, failures)
 
     dir_IS_data = os.path.join(dir_IS, "ToolboxSystem\\Data")
     dir_compareto_data = os.path.join(dir_compareto, "ToolboxSystem\\Data")
-    compare_dirs(dir_IS_data, dir_compareto_data)
+    compare_dirs(dir_IS_data, dir_compareto_data, all_checks, failures)
+
 
 
 def main():
-    create_log_files()
+    if not create_log_files():
+        print("Failed to create log files")
+        return
+    
     create_output_window()
-    check_apps()
-    check_dirs()
+    check_apps(all_checks, failures)
+    check_dirs(all_checks, failures)
+    
+    all_checks.close()
+    failures.close()
+    
     update_log_buttons()
+    print("\n✓ All checks complete!")
 
 
 #the function check_dirs() is triggered when the "Run Tests" button is clicked
