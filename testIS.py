@@ -3,17 +3,20 @@ import subprocess
 import sys
 import time, datetime   
 import tkinter as tk
+from tkinter import filedialog
 import win32api
+import win32con
 import re
 
 
+
 #directory where the IS puts Toolbox
-dir_IS = "d:\\Toolbox AP\\"
+dir_IS = "c:\\Toolbox AP\\"
 
 #directory with Toolbox installed correctly
-dir_compareto = "d:\\Toolbox\\tb_435\\"
+dir_compareto = "c:\\"
 
-dir_logs = "d:\\logs\\"
+dir_logs = "c:\\logs\\"
 
 server = "LAPTOP-HAYA\SQL2016ST"
 
@@ -37,45 +40,9 @@ window.geometry()
 title = tk.Label(text="Toolbox AP Installation Validation", font=("Arial", 16))
 title.pack(pady=10, anchor=tk.W)
 
-dir_IS_frame = tk.Frame(window) 
-dir_IS_frame.pack(pady=20, anchor=tk.W) 
-dir_IS_label = tk.Label(dir_IS_frame, width=25, text="Installation directory: ") 
-dir_IS_label.pack(side = tk.LEFT, padx=10) 
-dir_IS_entry = tk.Entry(dir_IS_frame, width=30) 
-dir_IS_entry.pack(side = tk.LEFT, padx=10) 
-dir_IS_entry.insert(0, dir_IS) 
-dir_IS_error = tk.Label(dir_IS_frame, text="", fg="white") 
-dir_IS_error.pack(anchor=tk.W)
-dir_IS_entry.bind("<Return>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
-dir_IS_entry.bind("<FocusOut>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
-
-dir_compareto_frame = tk.Frame(window)
-dir_compareto_frame.pack(pady=20, anchor=tk.W)
-dir_compareto_label = tk.Label(dir_compareto_frame, width=25, text="Comparison directory: ")
-dir_compareto_label.pack(side = tk.LEFT, padx=10)
-dir_compareto_entry = tk.Entry(dir_compareto_frame, width=30)
-dir_compareto_entry.pack(side = tk.LEFT, padx=10)
-dir_compareto_entry.insert(0, dir_compareto)
-dir_compareto_error = tk.Label(dir_compareto_frame, text="", fg="red")
-dir_compareto_error.pack(anchor=tk.W)
-dir_compareto_entry.bind("<Return>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
-dir_compareto_entry.bind("<FocusOut>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
-
-dir_logs_frame = tk.Frame(window)
-dir_logs_frame.pack(pady=20, anchor=tk.W)
-dir_logs_label = tk.Label(dir_logs_frame, width=25, text="Logs directory: ")
-dir_logs_label.pack(side = tk.LEFT, padx=10)
-dir_logs_entry = tk.Entry(dir_logs_frame, width=30)
-dir_logs_entry.pack(side = tk.LEFT, padx=10)
-dir_logs_entry.insert(0, dir_logs)
-dir_logs_error = tk.Label(dir_logs_frame, text="", fg="red")
-dir_logs_error.pack(anchor=tk.W)
-dir_logs_entry.bind("<Return>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
-dir_logs_entry.bind("<FocusOut>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
-
 version_frame = tk.Frame(window)
-version_frame.pack(pady=10, anchor=tk.CENTER)
-version_label = tk.Label(version_frame, width=15, text="Toolbox version: ")
+version_frame.pack(anchor=tk.E, padx=40)
+version_label = tk.Label(version_frame, width=15, anchor="e", text="Toolbox version: ")
 version_label.pack(side = tk.LEFT, padx=10)
 version_entry = tk.Entry(version_frame, width=7)
 version_entry.pack(side = tk.LEFT, padx=0)
@@ -87,8 +54,55 @@ version_error_frame.pack(pady=0, anchor=tk.E)
 version_error = tk.Label(version_error_frame, text="", fg="red")
 version_error.pack()
 
+date_frame = tk.Frame(window)
+date_frame.pack(pady=5, anchor=tk.E)
+date_label = tk.Label(date_frame, anchor="e", text="Install set creation date:")
+date_label.pack(side=tk.LEFT, padx=10)
+date_entry = tk.Entry(date_frame, width=12)
+date_entry.pack(side=tk.LEFT)
+date_error = tk.Label(window, text="", fg="red")
+date_error.pack(anchor=tk.E)
+date_entry.bind("<Return>", lambda e: validate_date())
+date_entry.bind("<FocusOut>", lambda e: validate_date())
+
+dir_IS_frame = tk.Frame(window) 
+dir_IS_frame.pack(pady=10, anchor=tk.W) 
+dir_IS_label = tk.Label(dir_IS_frame, width=25, text="Installation directory: ") 
+dir_IS_label.pack(side = tk.LEFT, padx=10) 
+dir_IS_entry = tk.Entry(dir_IS_frame, width=30) 
+dir_IS_entry.pack(side = tk.LEFT, padx=10) 
+dir_IS_entry.insert(0, dir_IS) 
+dir_IS_error = tk.Label(dir_IS_frame, text="", fg="white") 
+dir_IS_error.pack(anchor=tk.W)
+dir_IS_entry.bind("<Return>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
+dir_IS_entry.bind("<FocusOut>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
+
+dir_compareto_frame = tk.Frame(window)
+dir_compareto_frame.pack(pady=10, anchor=tk.W)
+dir_compareto_label = tk.Label(dir_compareto_frame, width=25, text="Comparison directory: ")
+dir_compareto_label.pack(side = tk.LEFT, padx=10)
+dir_compareto_entry = tk.Entry(dir_compareto_frame, width=30)
+dir_compareto_entry.pack(side = tk.LEFT, padx=10)
+dir_compareto_entry.insert(0, dir_compareto)
+dir_compareto_error = tk.Label(dir_compareto_frame, text="", fg="red")
+dir_compareto_error.pack(anchor=tk.W)
+dir_compareto_entry.bind("<Return>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
+dir_compareto_entry.bind("<FocusOut>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
+
+dir_logs_frame = tk.Frame(window)
+dir_logs_frame.pack(pady=(10, 60), anchor=tk.W)
+dir_logs_label = tk.Label(dir_logs_frame, width=25, text="Logs directory: ")
+dir_logs_label.pack(side = tk.LEFT, padx=10)
+dir_logs_entry = tk.Entry(dir_logs_frame, width=30)
+dir_logs_entry.pack(side = tk.LEFT, padx=10)
+dir_logs_entry.insert(0, dir_logs)
+dir_logs_error = tk.Label(dir_logs_frame, text="", fg="red")
+dir_logs_error.pack(anchor=tk.W)
+dir_logs_entry.bind("<Return>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
+dir_logs_entry.bind("<FocusOut>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
+
 run_frame = tk.Frame(window)
-run_frame.pack(pady=20)
+run_frame.pack()
 run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
 run_btn.pack(side=tk.LEFT, padx=10)
 
@@ -103,6 +117,11 @@ failures_btn.pack(side=tk.LEFT, padx=5)
 all_checks = None
 failures = None
 
+
+#=========================================================================================================================================
+#UI classes and functions
+#=========================================================================================================================================
+#Class to redirect print to output window in the GUI
 class TextRedirector(object):
     def __init__(self, text_widget):
         self.text_widget = text_widget
@@ -152,9 +171,14 @@ def check_all_valid():
     # Check version format
     version = version_entry.get().strip()
     version_valid = re.fullmatch(r"[\d.]+", version) and not version.startswith(".") and not version.endswith(".")
+    date_valid = True
+    try:
+        datetime.strptime(date_entry.get().strip(), "%d-%m-%Y")
+    except ValueError:
+        date_valid = False
     
     # Enable button only if all are valid
-    if dir_IS_valid and dir_compareto_valid and dir_logs_valid and version_valid:
+    if dir_IS_valid and dir_compareto_valid and dir_logs_valid and version_valid and date_valid:
         run_btn.config(state=tk.NORMAL, bg="#4CAF50")
     else:
         run_btn.config(state=tk.DISABLED, bg="#cccccc")
@@ -173,7 +197,6 @@ def validate_directory(entry, error_label, var_name):
 
     if not os.path.isdir(path):
         entry.config(bg="#ffcccc")
-        #error_label.config(text="Directory does not exist")
     else:
         entry.config(bg="white")
         error_label.config(text="", fg="red")  #hide error message
@@ -205,6 +228,23 @@ def validate_version(event=None):
     check_all_valid()
 
 
+def validate_date(event=None):
+    global install_date
+
+    date_str = date_entry.get().strip()
+
+    try:
+        datetime.strptime(date_str, "%d-%m-%Y")
+        date_entry.config(bg="white")
+        date_error.config(text="")
+        install_date = date_str
+    except ValueError:
+        date_entry.config(bg="#ffcccc")
+        date_error.config(text="Use format DD-MM-YYYY")
+
+    check_all_valid()
+
+
 def create_output_window():
     output_window = tk.Toplevel(window)
     output_window.title("Test Results")
@@ -222,7 +262,7 @@ def create_output_window():
     sys.stdout = TextRedirector(output_text)
 
 #========================================================================================================================================
-#Check if all files are present (exe, Help, config, etc.)
+#Functions to check the installation: compare directories, print results & write to log files
 #========================================================================================================================================
 def create_log_files():
     global all_checks, failures
@@ -259,28 +299,72 @@ def check_apps(all_checks, failures):
         app_path = os.path.join(dir_IS, app)
 
         if not os.path.exists(app_path):
-            print(f"{app} not found")
-            all_checks.write(f"{app} not found\n")
-            failures.write(f"{app} not found\n")
+            msg = f"{app} not found"
+            print(msg)
+            all_checks.write(msg + "\n")
+            failures.write(msg + "\n")
+            continue
+
+        try:
+            info = win32api.GetFileVersionInfo(app_path, '\\')
+            ms = info['FileVersionMS']
+            ls = info['FileVersionLS']
+            app_version = f"{ms >> 16}.{ms & 0xFFFF}.{ls >> 16}.{ls & 0xFFFF}"
+        except Exception as e:
+            msg = f"{app} error reading version: {e}"
+            print(msg)
+            all_checks.write(msg + "\n")
+            failures.write(msg + "\n")
+            continue
+
+        # version check
+        version_ok = app_version.startswith(tb_version)
+
+        # icon check
+        icon_ok = has_icon(app_path)
+
+        # build message
+        parts = []
+
+        if version_ok:
+            parts.append(f"version OK: {app_version}")
         else:
-            try:
-                info = win32api.GetFileVersionInfo(app_path, '\\')
-                ms = info['FileVersionMS']
-                ls = info['FileVersionLS']
-                app_version = f"{ms >> 16}.{ms & 0xFFFF}.{ls >> 16}.{ls & 0xFFFF}"
-            except Exception as e:
-                print(f"Error getting version for {app}: {e}")                   
-            
-            if not app_version.startswith(tb_version):
-                msg = f"{app} version mismatch: {app_version} (expected {tb_version}.x)"
-                print(msg)
-                all_checks.write(msg + "\n")
-                failures.write(msg + "\n")
-            else:
-                all_checks.write(f"{app} version OK: {app_version}\n")
+            parts.append(f"version mismatch: {app_version} (expected {tb_version}.x)")
+
+        if icon_ok:
+            parts.append("has an icon")
+        else:
+            parts.append("no icon")
+
+        msg = f"{app} " + ", ".join(parts)
+
+        print(msg)
+        all_checks.write(msg + "\n")
+
+        if not version_ok or not icon_ok:
+            failures.write(msg + "\n")
+
     print()
+    all_checks.write("\n")
+    failures.write("\n")
+
     all_checks.flush()
     failures.flush()
+
+
+def has_icon(exe_path):
+    try:
+        hmodule = win32api.LoadLibraryEx(
+            exe_path,
+            0,
+            win32con.LOAD_LIBRARY_AS_DATAFILE
+        )
+
+        icons = win32api.EnumResourceNames(hmodule, win32con.RT_GROUP_ICON)
+        return len(icons) > 0
+
+    except Exception:
+        return False
 
 
 
@@ -319,6 +403,8 @@ def compare_dirs(dir1, dir2, all_checks, failures):
         print(msg)
         all_checks.write(f"{msg}\n")
     print()
+    all_checks.write("\n")
+    failures.write("\n")
     all_checks.flush()
     failures.flush()
 
