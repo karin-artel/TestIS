@@ -9,18 +9,14 @@ import win32con
 import re
 
 
+config = {
+    "dir_IS": "c:\\Toolbox AP\\",
+    "dir_compareto": "c:\\",
+    "dir_logs": "c:\\logs\\",
+    "tb_version": "4.3.6",
+    "install_date": datetime.date.today()
+}
 
-#directory where the IS puts Toolbox
-dir_IS = "c:\\Toolbox AP\\"
-
-#directory with Toolbox installed correctly
-dir_compareto = "c:\\"
-
-dir_logs = "c:\\logs\\"
-
-server = "LAPTOP-HAYA\SQL2016ST"
-
-licensed_db = "Karin_Lucy_LH"
 
 apps = [ "ActiveUsers.exe", "BAR.exe", "ConfigurationEditor.exe", "DatabaseChecking.exe", 
         "DatabasePurging.exe", "DataScience.exe", "FormulaEditor.exe", "HierarchyManager.exe", 
@@ -30,7 +26,6 @@ apps = [ "ActiveUsers.exe", "BAR.exe", "ConfigurationEditor.exe", "DatabaseCheck
 help_files = ["AdministrativeGuide", "DatabaseChecking", "HierarchyManager.chm", "InputFileBuilder", 
               "IntegrationBuilder", "LoadData", "MainConcept", "Maintenance", "Planner", "UserManagement"]
 
-tb_version = "4.3.5"
 
 #========================================================================================================================================
 #Configure UI, get user input for the global parameters (directories, version, apps, help files to check)
@@ -46,7 +41,7 @@ version_label = tk.Label(version_frame, width=15, anchor="e", text="Toolbox vers
 version_label.pack(side = tk.LEFT, padx=10)
 version_entry = tk.Entry(version_frame, width=7)
 version_entry.pack(side = tk.LEFT, padx=0)
-version_entry.insert(0, tb_version)
+version_entry.insert(0, config["tb_version"])
 version_entry.bind("<Return>", lambda e: validate_version())
 version_entry.bind("<FocusOut>", lambda e: validate_version())
 version_error_frame = tk.Frame(window)
@@ -62,6 +57,7 @@ date_entry = tk.Entry(date_frame, width=12)
 date_entry.pack(side=tk.LEFT)
 date_error = tk.Label(window, text="", fg="red")
 date_error.pack(anchor=tk.E)
+date_entry.insert(0, config["install_date"].strftime("%d-%m-%Y"))
 date_entry.bind("<Return>", lambda e: validate_date())
 date_entry.bind("<FocusOut>", lambda e: validate_date())
 
@@ -71,7 +67,7 @@ dir_IS_label = tk.Label(dir_IS_frame, width=25, text="Installation directory: ")
 dir_IS_label.pack(side = tk.LEFT, padx=10) 
 dir_IS_entry = tk.Entry(dir_IS_frame, width=30) 
 dir_IS_entry.pack(side = tk.LEFT, padx=10) 
-dir_IS_entry.insert(0, dir_IS) 
+dir_IS_entry.insert(0, config["dir_IS"])
 dir_IS_error = tk.Label(dir_IS_frame, text="", fg="white") 
 dir_IS_error.pack(anchor=tk.W)
 dir_IS_entry.bind("<Return>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
@@ -83,7 +79,7 @@ dir_compareto_label = tk.Label(dir_compareto_frame, width=25, text="Comparison d
 dir_compareto_label.pack(side = tk.LEFT, padx=10)
 dir_compareto_entry = tk.Entry(dir_compareto_frame, width=30)
 dir_compareto_entry.pack(side = tk.LEFT, padx=10)
-dir_compareto_entry.insert(0, dir_compareto)
+dir_compareto_entry.insert(0, config["dir_compareto"])
 dir_compareto_error = tk.Label(dir_compareto_frame, text="", fg="red")
 dir_compareto_error.pack(anchor=tk.W)
 dir_compareto_entry.bind("<Return>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
@@ -95,7 +91,7 @@ dir_logs_label = tk.Label(dir_logs_frame, width=25, text="Logs directory: ")
 dir_logs_label.pack(side = tk.LEFT, padx=10)
 dir_logs_entry = tk.Entry(dir_logs_frame, width=30)
 dir_logs_entry.pack(side = tk.LEFT, padx=10)
-dir_logs_entry.insert(0, dir_logs)
+dir_logs_entry.insert(0, config["dir_logs"])
 dir_logs_error = tk.Label(dir_logs_frame, text="", fg="red")
 dir_logs_error.pack(anchor=tk.W)
 dir_logs_entry.bind("<Return>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
@@ -105,6 +101,8 @@ run_frame = tk.Frame(window)
 run_frame.pack()
 run_btn = tk.Button(run_frame, bg="#4CAF50", fg="white", text="Run Tests")
 run_btn.pack(side=tk.LEFT, padx=10)
+#the function check_dirs() is triggered when the "Run Tests" button is clicked
+run_btn.config(command=lambda: main())
 
 logs_frame = tk.Frame(window)
 logs_frame.pack(pady=10)
@@ -137,7 +135,7 @@ class TextRedirector(object):
 
 def open_log_file(filename):
     """Open log file with default application"""
-    log_path = os.path.join(dir_logs, filename)
+    log_path = os.path.join(config["dir_logs"], filename)
     if os.path.exists(log_path) and os.path.getsize(log_path) > 0:
         import subprocess
         subprocess.Popen(f'notepad "{log_path}"')  # Opens with Notepad on Windows
@@ -147,8 +145,8 @@ def open_log_file(filename):
 
 def update_log_buttons():
     """Enable log buttons if files exist and are non-empty"""
-    all_checks_path = os.path.join(dir_logs, "all_checks.log")
-    failures_path = os.path.join(dir_logs, "failures.log")
+    all_checks_path = os.path.join(config["dir_logs"], "all_checks.log")
+    failures_path = os.path.join(config["dir_logs"], "failures.log")
     
     all_checks_valid = os.path.exists(all_checks_path) and os.path.getsize(all_checks_path) > 0
     failures_valid = os.path.exists(failures_path) and os.path.getsize(failures_path) > 0
@@ -157,7 +155,7 @@ def update_log_buttons():
     failures_btn.config(state=tk.NORMAL if failures_valid else tk.DISABLED)
 
 
-def check_all_valid():
+def check_all_entries():
     """Check if all inputs are valid and enable/disable Run button"""
     # Check dir_IS
     dir_IS_valid = os.path.isdir(dir_IS_entry.get().strip())
@@ -172,10 +170,6 @@ def check_all_valid():
     version = version_entry.get().strip()
     version_valid = re.fullmatch(r"[\d.]+", version) and not version.startswith(".") and not version.endswith(".")
     date_valid = True
-    try:
-        datetime.strptime(date_entry.get().strip(), "%d-%m-%Y")
-    except ValueError:
-        date_valid = False
     
     # Enable button only if all are valid
     if dir_IS_valid and dir_compareto_valid and dir_logs_valid and version_valid and date_valid:
@@ -185,8 +179,6 @@ def check_all_valid():
 
 
 def validate_directory(entry, error_label, var_name):
-    global dir_IS, dir_compareto, dir_logs
-
     path = entry.get().strip()
 
     # Automatically add backslash if missing
@@ -202,12 +194,12 @@ def validate_directory(entry, error_label, var_name):
         error_label.config(text="", fg="red")  #hide error message
 
         if var_name == "dir_IS":
-            dir_IS = path
+            config["dir_IS"] = path
         elif var_name == "dir_compareto":
-            dir_compareto = path
+            config["dir_compareto"] = path
         elif var_name == "dir_logs":
-            dir_logs = path
-    check_all_valid()
+            config["dir_logs"] = path
+    check_all_entries()
 
 
 def validate_version(event=None):
@@ -225,7 +217,7 @@ def validate_version(event=None):
         version_entry.config(bg="white")
         version_error.config(text="")
         tb_version = version
-    check_all_valid()
+    check_all_entries()
 
 
 def validate_date(event=None):
@@ -234,15 +226,15 @@ def validate_date(event=None):
     date_str = date_entry.get().strip()
 
     try:
-        datetime.strptime(date_str, "%d-%m-%Y")
+        datetime.datetime.strptime(date_str, "%d-%m-%Y")
         date_entry.config(bg="white")
         date_error.config(text="")
-        install_date = date_str
+        config["install_date"] = date_str
     except ValueError:
         date_entry.config(bg="#ffcccc")
         date_error.config(text="Use format DD-MM-YYYY")
 
-    check_all_valid()
+    check_all_entries()
 
 
 def create_output_window():
@@ -269,87 +261,77 @@ def create_log_files():
     
     # Make sure the directory exists
     try:
-        if not os.path.exists(dir_logs):
-            os.makedirs(dir_logs)
+        if not os.path.exists(config["dir_logs"]):
+            os.makedirs(config["dir_logs"])
     except Exception as e:
-        print(f"Error creating directory {dir_logs}: {e}")
+        print(f"Error creating directory {config['dir_logs']}: {e}")
         return False
     
-    # Remove old log files
+    # Create new log files in write mode
     try:
-        if os.path.exists(os.path.join(dir_logs, "all_checks.log")):
-            os.remove(os.path.join(dir_logs, "all_checks.log"))
-        if os.path.exists(os.path.join(dir_logs, "failures.log")):
-            os.remove(os.path.join(dir_logs, "failures.log"))
-    except Exception as e:
-        print(f"Error removing old log files: {e}")
-    
-    # Create new log files in append mode
-    try:
-        all_checks = open(os.path.join(dir_logs, "all_checks.log"), "a")
-        failures = open(os.path.join(dir_logs, "failures.log"), "a")
+        all_checks = open(os.path.join(config["dir_logs"], "all_checks.log"), "w")
+        failures = open(os.path.join(config["dir_logs"], "failures.log"), "w")
         return True
     except Exception as e:
         print(f"Error creating log files: {e}")
         return False
         
-
+#------------------------------------------------------------------------------------------------
+# app checks: version, icon, compilation date
 def check_apps(all_checks, failures):
     for app in apps:
-        app_path = os.path.join(dir_IS, app)
+        app_path = os.path.join(config["dir_IS"], app)
 
         if not os.path.exists(app_path):
-            msg = f"{app} not found"
-            print(msg)
-            all_checks.write(msg + "\n")
-            failures.write(msg + "\n")
+            log(f"{app} not found", all_checks, failures, True)
             continue
-
+        
         try:
-            info = win32api.GetFileVersionInfo(app_path, '\\')
-            ms = info['FileVersionMS']
-            ls = info['FileVersionLS']
-            app_version = f"{ms >> 16}.{ms & 0xFFFF}.{ls >> 16}.{ls & 0xFFFF}"
+            app_version = get_exe_version(app_path)
         except Exception as e:
-            msg = f"{app} error reading version: {e}"
-            print(msg)
-            all_checks.write(msg + "\n")
-            failures.write(msg + "\n")
+            log(f"{app} error reading version: {e}", all_checks, failures, True)
             continue
 
-        # version check
-        version_ok = app_version.startswith(tb_version)
-
-        # icon check
+        version_ok = app_version.startswith(config["tb_version"])
         icon_ok = has_icon(app_path)
-
-        # build message
-        parts = []
-
-        if version_ok:
-            parts.append(f"version OK: {app_version}")
-        else:
-            parts.append(f"version mismatch: {app_version} (expected {tb_version}.x)")
-
-        if icon_ok:
-            parts.append("has an icon")
-        else:
-            parts.append("no icon")
-
-        msg = f"{app} " + ", ".join(parts)
-
-        print(msg)
-        all_checks.write(msg + "\n")
-
-        if not version_ok or not icon_ok:
-            failures.write(msg + "\n")
+        msg = build_app_message(app, app_version, version_ok, icon_ok)
+        log(msg, all_checks, failures, not (version_ok and icon_ok))
 
     print()
     all_checks.write("\n")
     failures.write("\n")
-
     all_checks.flush()
     failures.flush()
+
+
+def get_exe_version(app_path):
+    try:
+        info = win32api.GetFileVersionInfo(app_path, '\\')
+        ms = info['FileVersionMS']
+        ls = info['FileVersionLS']
+        return f"{ms >> 16}.{ms & 0xFFFF}.{ls >> 16}.{ls & 0xFFFF}"
+    except Exception as e:
+        return None
+
+
+def log(msg, all_checks, failures=None, is_failure=False):
+    print(msg)
+    all_checks.write(msg + "\n")
+    if is_failure and failures:
+        failures.write(msg + "\n")
+
+
+def build_app_message(app, app_version, version_ok, icon_ok):
+    parts = []
+
+    if version_ok:
+        parts.append(f"version OK: {app_version}")
+    else:
+        parts.append(f"version mismatch: {app_version} (expected {config['tb_version']}.x)")
+
+    parts.append("has an icon" if icon_ok else "no icon")
+
+    return f"{app} " + ", ".join(parts)
 
 
 def has_icon(exe_path):
@@ -366,7 +348,7 @@ def has_icon(exe_path):
     except Exception:
         return False
 
-
+#------------------------------------------------------------------------------------------------
 
 def compare_dirs(dir1, dir2, all_checks, failures):
     """
@@ -414,24 +396,24 @@ def check_dirs(all_checks, failures):
     Compare key Toolbox subdirectories between the installation directory
     (dir_IS) and the reference directory (dir_compareto).
     """
-    dir_IS_help = os.path.join(dir_IS, "Help")
-    dir_compareto_help = os.path.join(dir_compareto, "Help")
+    dir_IS_help = os.path.join(config["dir_IS"], "Help")
+    dir_compareto_help = os.path.join(config["dir_compareto"], "Help")
     compare_dirs(dir_IS_help, dir_compareto_help, all_checks, failures)
 
-    dir_IS_toolbox = os.path.join(dir_IS, "ToolboxSystem")
-    dir_compareto_toolbox = os.path.join(dir_compareto, "ToolboxSystem")
+    dir_IS_toolbox = os.path.join(config["dir_IS"], "ToolboxSystem")
+    dir_compareto_toolbox = os.path.join(config["dir_compareto"], "ToolboxSystem")
     compare_dirs(dir_IS_toolbox, dir_compareto_toolbox, all_checks, failures)
 
-    dir_IS_texts = os.path.join(dir_IS, "ToolboxSystem\\Texts\\en-Us")
-    dir_compareto_texts = os.path.join(dir_compareto, "ToolboxSystem\\Texts\\en-Us")
+    dir_IS_texts = os.path.join(config["dir_IS"], "ToolboxSystem\\Texts\\en-Us")
+    dir_compareto_texts = os.path.join(config["dir_compareto"], "ToolboxSystem\\Texts\\en-Us")
     compare_dirs(dir_IS_texts, dir_compareto_texts, all_checks, failures)
 
-    dir_IS_sql = os.path.join(dir_IS, "CreateDBSql")
-    dir_compareto_sql = os.path.join(dir_compareto, "CreateDBSql")
+    dir_IS_sql = os.path.join(config["dir_IS"], "CreateDBSql")
+    dir_compareto_sql = os.path.join(config["dir_compareto"], "CreateDBSql")
     compare_dirs(dir_IS_sql, dir_compareto_sql, all_checks, failures)
 
-    dir_IS_data = os.path.join(dir_IS, "ToolboxSystem\\Data")
-    dir_compareto_data = os.path.join(dir_compareto, "ToolboxSystem\\Data")
+    dir_IS_data = os.path.join(config["dir_IS"], "ToolboxSystem\\Data")
+    dir_compareto_data = os.path.join(config["dir_compareto"], "ToolboxSystem\\Data")
     compare_dirs(dir_IS_data, dir_compareto_data, all_checks, failures)
 
 
@@ -451,9 +433,6 @@ def main():
     update_log_buttons()
     print("\n✓ All checks complete!")
 
-
-#the function check_dirs() is triggered when the "Run Tests" button is clicked
-run_btn.config(command=lambda: main())
 
 # START the GUI
 window.mainloop()
