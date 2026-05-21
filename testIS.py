@@ -23,13 +23,10 @@ apps = [ "ActiveUsers.exe", "BAR.exe", "ConfigurationEditor.exe", "DatabaseCheck
         "IntegrationBuilder.exe", "LoadData.exe", "LogAnalyzer.exe", "Maintenance.exe", 
         "Planner.exe", "SystemBuilder.exe", "ToolboxDesktop.exe", "UserManagement.exe"]   
 
-help_files = ["AdministrativeGuide", "DatabaseChecking", "HierarchyManager.chm", "InputFileBuilder", 
-              "IntegrationBuilder", "LoadData", "MainConcept", "Maintenance", "Planner", "UserManagement"]
-
 
 #========================================================================================================================================
 #Configure UI, get user input for the global parameters (directories, version, apps, help files to check)
-#========================================================================================================================================
+#=================hel=======================================================================================================================
 window = tk.Tk()
 window.geometry()
 title = tk.Label(text="Toolbox AP Installation Validation", font=("Arial", 16))
@@ -65,9 +62,22 @@ dir_IS_frame = tk.Frame(window)
 dir_IS_frame.pack(pady=10, anchor=tk.W) 
 dir_IS_label = tk.Label(dir_IS_frame, width=25, text="Installation directory: ") 
 dir_IS_label.pack(side = tk.LEFT, padx=10) 
-dir_IS_entry = tk.Entry(dir_IS_frame, width=30) 
-dir_IS_entry.pack(side = tk.LEFT, padx=10) 
+dir_IS_field = tk.Frame(dir_IS_frame, bd=1, relief=tk.SUNKEN, bg="white")
+dir_IS_field.pack(side=tk.LEFT, padx=10)
+dir_IS_entry = tk.Entry(dir_IS_field, width=27, bd=0)
+dir_IS_entry.pack(side=tk.LEFT, padx=(2, 0))
 dir_IS_entry.insert(0, config["dir_IS"])
+
+dir_IS_browse_btn = tk.Button(
+    dir_IS_field,
+    text="📁",
+    width=2,
+    bd=0,
+    bg="white",
+    activebackground="white",
+    font=("Segoe UI Emoji", 10),
+    command=lambda: browse_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
+dir_IS_browse_btn.pack(side=tk.LEFT, padx=(0, 2))
 dir_IS_error = tk.Label(dir_IS_frame, text="", fg="white") 
 dir_IS_error.pack(anchor=tk.W)
 dir_IS_entry.bind("<Return>", lambda e: validate_directory(dir_IS_entry, dir_IS_error, "dir_IS"))
@@ -77,9 +87,22 @@ dir_compareto_frame = tk.Frame(window)
 dir_compareto_frame.pack(pady=10, anchor=tk.W)
 dir_compareto_label = tk.Label(dir_compareto_frame, width=25, text="Comparison directory: ")
 dir_compareto_label.pack(side = tk.LEFT, padx=10)
-dir_compareto_entry = tk.Entry(dir_compareto_frame, width=30)
-dir_compareto_entry.pack(side = tk.LEFT, padx=10)
+dir_compareto_field = tk.Frame(dir_compareto_frame, bd=1, relief=tk.SUNKEN, bg="white")
+dir_compareto_field.pack(side=tk.LEFT, padx=10)
+
+dir_compareto_entry = tk.Entry(dir_compareto_field, width=27, bd=0)
+dir_compareto_entry.pack(side=tk.LEFT, padx=(2, 0))
 dir_compareto_entry.insert(0, config["dir_compareto"])
+dir_compareto_browse_btn = tk.Button(
+    dir_compareto_field,
+    text="📁",
+    width=2,
+    bd=0,
+    bg="white",
+    activebackground="white",
+    font=("Segoe UI Emoji", 10),
+    command=lambda: browse_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
+dir_compareto_browse_btn.pack(side=tk.LEFT, padx=(0, 2))
 dir_compareto_error = tk.Label(dir_compareto_frame, text="", fg="red")
 dir_compareto_error.pack(anchor=tk.W)
 dir_compareto_entry.bind("<Return>", lambda e: validate_directory(dir_compareto_entry, dir_compareto_error, "dir_compareto"))
@@ -89,9 +112,21 @@ dir_logs_frame = tk.Frame(window)
 dir_logs_frame.pack(pady=(10, 60), anchor=tk.W)
 dir_logs_label = tk.Label(dir_logs_frame, width=25, text="Logs directory: ")
 dir_logs_label.pack(side = tk.LEFT, padx=10)
-dir_logs_entry = tk.Entry(dir_logs_frame, width=30)
-dir_logs_entry.pack(side = tk.LEFT, padx=10)
+dir_logs_field = tk.Frame(dir_logs_frame, bd=1, relief=tk.SUNKEN, bg="white")
+dir_logs_field.pack(side=tk.LEFT, padx=10)
+dir_logs_entry = tk.Entry(dir_logs_field, width=27, bd=0)
+dir_logs_entry.pack(side=tk.LEFT, padx=(2, 0))
 dir_logs_entry.insert(0, config["dir_logs"])
+dir_logs_browse_btn = tk.Button(
+    dir_logs_field,
+    text="📁",
+    width=2,
+    bd=0,
+    bg="white",
+    activebackground="white",
+    font=("Segoe UI Emoji", 10),
+    command=lambda: browse_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
+dir_logs_browse_btn.pack(side=tk.LEFT, padx=(0, 2))
 dir_logs_error = tk.Label(dir_logs_frame, text="", fg="red")
 dir_logs_error.pack(anchor=tk.W)
 dir_logs_entry.bind("<Return>", lambda e: validate_directory(dir_logs_entry, dir_logs_error, "dir_logs"))
@@ -178,6 +213,15 @@ def check_all_entries():
         run_btn.config(state=tk.DISABLED, bg="#cccccc")
 
 
+def browse_directory(entry, error_label, var_name):
+    path = filedialog.askdirectory(initialdir=entry.get().strip())
+
+    if path:
+        entry.delete(0, tk.END)
+        entry.insert(0, path)
+        validate_directory(entry, error_label, var_name)
+
+
 def validate_directory(entry, error_label, var_name):
     path = entry.get().strip()
 
@@ -221,15 +265,14 @@ def validate_version(event=None):
 
 
 def validate_date(event=None):
-    global install_date
-
     date_str = date_entry.get().strip()
 
     try:
-        datetime.datetime.strptime(date_str, "%d-%m-%Y")
+        install_date = datetime.datetime.strptime(date_str, "%d-%m-%Y").date()
         date_entry.config(bg="white")
         date_error.config(text="")
-        config["install_date"] = date_str
+        config["install_date"] = install_date
+
     except ValueError:
         date_entry.config(bg="#ffcccc")
         date_error.config(text="Use format DD-MM-YYYY")
@@ -294,8 +337,9 @@ def check_apps(all_checks, failures):
 
         version_ok = app_version.startswith(config["tb_version"])
         icon_ok = has_icon(app_path)
-        msg = build_app_message(app, app_version, version_ok, icon_ok)
-        log(msg, all_checks, failures, not (version_ok and icon_ok))
+        compile_date_ok = check_compilation_date(app_path)
+        msg = build_app_message(app, app_version, version_ok, icon_ok, compile_date_ok)
+        log(msg, all_checks, failures, not (version_ok and icon_ok and compile_date_ok))
 
     print()
     all_checks.write("\n")
@@ -321,7 +365,7 @@ def log(msg, all_checks, failures=None, is_failure=False):
         failures.write(msg + "\n")
 
 
-def build_app_message(app, app_version, version_ok, icon_ok):
+def build_app_message(app, app_version, version_ok, icon_ok, compile_date_ok):
     parts = []
 
     if version_ok:
@@ -330,6 +374,7 @@ def build_app_message(app, app_version, version_ok, icon_ok):
         parts.append(f"version mismatch: {app_version} (expected {config['tb_version']}.x)")
 
     parts.append("has an icon" if icon_ok else "no icon")
+    parts.append("compilation date OK" if compile_date_ok else "compilation date mismatch")
 
     return f"{app} " + ", ".join(parts)
 
@@ -347,6 +392,12 @@ def has_icon(exe_path):
 
     except Exception:
         return False
+    
+
+def check_compilation_date(app_path):
+    timestamp = os.path.getmtime(app_path)
+    compilation_date = datetime.date.fromtimestamp(timestamp)
+    return compilation_date == config["install_date"]
 
 #------------------------------------------------------------------------------------------------
 
