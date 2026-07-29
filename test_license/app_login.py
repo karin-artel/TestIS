@@ -68,6 +68,69 @@ def login_to_app(process_id, config, timeout=30):
     print("Login submitted")
 
 
+def close_login_popup_if_present(process_id, timeout=10):
+    popup = wait_for_popup_window(process_id, timeout)
+    if not popup:
+        return False
+
+    print(f"Login popup: {get_popup_text(popup)}")
+    click_button(popup, "OK")
+    return True
+
+
+def wait_for_popup_window(process_id, timeout=10):
+    end_time = time.time() + timeout
+
+    while time.time() < end_time:
+        popup = find_popup_window(process_id)
+        if popup:
+            user32.ShowWindow(popup, SW_RESTORE)
+            user32.SetForegroundWindow(popup)
+            return popup
+
+        time.sleep(0.5)
+
+    return None
+
+
+def find_popup_window(process_id):
+    matches = []
+
+    def callback(hwnd, lparam):
+        if not user32.IsWindowVisible(hwnd):
+            return True
+
+        window_process_id = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(window_process_id))
+
+        if window_process_id.value != process_id:
+            return True
+
+        title = get_window_text(hwnd)
+        if "login" in title.lower():
+            return True
+
+        if find_child_by_text(hwnd, "OK") and get_popup_text(hwnd):
+            matches.append(hwnd)
+            return False
+
+        return True
+
+    user32.EnumWindows(EnumWindowsProc(callback), 0)
+    return matches[0] if matches else None
+
+
+def get_popup_text(parent_hwnd):
+    text_parts = []
+
+    for child in get_child_windows(parent_hwnd):
+        text = normalize_control_text(get_window_text(child)).strip()
+        if text and text not in {"OK", "Cancel", "Windows Security", "Advanced"}:
+            text_parts.append(text)
+
+    return " ".join(text_parts)
+
+
 def select_database(parent_hwnd, database_name):
     label = find_child_by_text(parent_hwnd, "Database:")
     if not label:

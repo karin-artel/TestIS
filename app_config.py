@@ -1,44 +1,47 @@
 import datetime
+import json
+from pathlib import Path
 
 
-config = {
-    "dir_IS": "d:\\Toolbox AP\\",
-    "dir_compareto": "c:\\",
-    "dir_logs": "c:\\logs\\",
-    "tb_version": "4.3.6",
-    "install_date": datetime.date.today(),
-    "app_path": "D:\\Toolbox\\tb_436\\Planner\\Planner.sln",
-    "backup_path": "d:\\MSSQL\\Backup\\",
-    "backups": [
-        "Karin_DBwoLicense.bak",
-        "Karin_DBLicense.bak",
-        "Karin_DBExpired_License.bak",
-    ],
-    "server": "LAPTOP-HAYA\\SQL2022ENT",
-    "database": "LicenseTest",
-    "login_name": "tlbxa",
-    "password": "Artelnt1",
-}
+CONFIG_FILE = Path(__file__).with_name("app_config.json")
+
+config = {}
+apps = []
 
 
-apps = [
-    "ActiveUsers.exe",
-    "BAR.exe",
-    "ConfigurationEditor.exe",
-    "DatabaseChecking.exe",
-    "DatabasePurging.exe",
-    "DataScience.exe",
-    "FormulaEditor.exe",
-    "HierarchyManager.exe",
-    "InputFileBuilder.exe",
-    "IntegrationBuilder.exe",
-    "LoadData.exe",
-    "LogAnalyzer.exe",
-    "Maintenance.exe",
-    "Planner.exe",
-    "SubstitutionEditor.exe",
-    "SystemBuilder.exe",
-    "ToolboxDesktop.exe",
-    "ToolboxUpdater.exe",
-    "UserManagement.exe",
-]
+def load_config():
+    with open(CONFIG_FILE, "r", encoding="utf-8") as file:
+        raw_config = json.load(file)
+
+    general_config = raw_config.get("general", {})
+    testIS_config = raw_config.get("testIS", {})
+    test_license_config = raw_config.get("test_license", {})
+
+    loaded_config = {}
+    loaded_config.update(general_config)
+    loaded_config.update(testIS_config)
+    loaded_config.update(test_license_config)
+
+    if isinstance(loaded_config.get("install_date"), str):
+        loaded_config["install_date"] = datetime.datetime.strptime(
+            loaded_config["install_date"],
+            "%Y-%m-%d",
+        ).date()
+
+    loaded_apps = testIS_config.get("apps", [])
+    return loaded_config, loaded_apps
+
+
+def reload_config():
+    loaded_config, loaded_apps = load_config()
+
+    config.clear()
+    config.update(loaded_config)
+
+    apps.clear()
+    apps.extend(loaded_apps)
+
+    return config, apps
+
+
+reload_config()

@@ -1,15 +1,16 @@
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from app_config import config
+from app_config import config, reload_config
 from sql.restore_database import restore_database
-from test_license.app_login import login_to_app
+from test_license.app_login import close_login_popup_if_present, login_to_app
 
 
 
@@ -77,12 +78,46 @@ def run_app(app_name):
         return None
 
 
+def close_app(process):
+    if process.poll() is not None:
+        return
+
+    process.terminate()
+
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=10)
+
+
+def test_backup_login(backup_name):
+    print(f"\nTesting backup: {backup_name}")
+    restore_database(backup_name)
+
+    process = run_app("Planner.exe")
+    if not process:
+        return
+
+    try:
+        login_to_app(process.pid, config)
+        popup_was_shown = close_login_popup_if_present(process.pid)
+
+        if popup_was_shown:
+            print(f"{backup_name}: login failed")
+        else:
+            print(f"{backup_name}: login succeeded")
+
+        time.sleep(1)
+    finally:
+        close_app(process)
+
 
 
 if __name__ == "__main__":
-    restore_database(config["backups"][0])
+    reload_config()
     modify_databases_config()
     modify_toolboxuser_config()
-    process = run_app("Planner.exe")
-    if process:
-        login_to_app(process.pid, config)
+
+    for backup_name in config["backups"]:
+        test_backup_login(backup_name)
