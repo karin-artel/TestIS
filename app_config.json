@@ -1,6 +1,6 @@
 {
   "general": {
-    "dir_IS": "\\\\arteltestwin10\\C\\Toolbox AP4361_20260112\\",
+    "dir_IS": "c:\\Toolbox AP4361_20260112\\",
     "dir_logs": "c:\\logs\\",
     "tb_version": "4.3.6",
     "install_date": "2026-07-29"
@@ -30,16 +30,19 @@
     ]
   },
   "test_license": {
-    "app_path": "D:\\Toolbox\\tb_436\\Planner\\Planner.sln",
-    "backup_path": "d:\\MSSQL\\Backup\\",
+    "app_path": "c:\\Toolbox AP4361_20260112\\Planner.exe",
+    "backup_path": "\\\\artel_sql\\E\\Backup\\KarinBackups\\",
     "backups": [
       "Karin_DBwoLicense.bak",
       "Karin_DBLicense.bak",
       "Karin_DBExpired_License.bak"
     ],
-    "server": "Artel_SQL\\sql2022ST",
-    "database": "Karin_example",
-    "login_name": "tlbxa",
-    "password": "Artelnt1"
+    "server": "Artel_SQL\\sql2016ST_QA",
+    "database": "Karin_DBLicense",
+    "database_data_path": "\\\\artel_sql\\E\\Data\\SQL2016ST_QA\\",
+    "database_log_path": "\\\\artel_sql\\E\\Data\\SQL2016ST_QA\\",
+    "sql_login": "sa",
+    "sql_password": "Artelnt1",
+    "login_name": "tlbxa"
   }
 }

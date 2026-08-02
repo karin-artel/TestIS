@@ -19,7 +19,8 @@ def restore_database(backup_name):
         f"DRIVER={{{driver}}};"
         f"SERVER={config['server']};"
         "DATABASE=master;"
-        "Trusted_Connection=yes;"
+        f"UID={config['sql_login']};"
+        f"PWD={config['sql_password']};"
         "TrustServerCertificate=yes;"
     )
 
@@ -27,14 +28,22 @@ def restore_database(backup_name):
     owner_sql = config["login_name"].replace("'", "''")
     backup_file_sql = backup_file.replace("'", "''")
 
-    data_file = rf"D:\MSSQL\Data\{config['database']}.mdf"
-    log_file = rf"D:\MSSQL\Data\{config['database']}_log.ldf"
+    data_file = os.path.join(
+        config["database_data_path"],
+        f"{config['database']}.mdf",
+    )
+    log_file = os.path.join(
+        config["database_log_path"],
+        f"{config['database']}_log.ldf",
+    )
 
     data_file_sql = data_file.replace("'", "''")
     log_file_sql = log_file.replace("'", "''")
 
+    print(f"Connecting to SQL Server '{config['server']}'...")
     connection = pyodbc.connect(connection_string, autocommit=True, timeout=300)
     cursor = connection.cursor()
+    print("Connected to SQL Server.")
 
     try:
         cursor.execute(
@@ -45,18 +54,29 @@ def restore_database(backup_name):
 
         if row:
             state_desc = row[0]
+            print(
+                f"Database '{config['database']}' already exists "
+                f"with state '{state_desc}'."
+            )
 
             if state_desc == "RESTORING":
+                print(f"Dropping database '{config['database']}'...")
                 cursor.execute(f"DROP DATABASE [{database_sql}]")
             else:
+                print(f"Setting database '{config['database']}' to single-user mode...")
                 cursor.execute(f"""
                     ALTER DATABASE [{database_sql}]
                     SET SINGLE_USER
                     WITH ROLLBACK IMMEDIATE
                 """)
 
+                print(f"Dropping database '{config['database']}'...")
                 cursor.execute(f"DROP DATABASE [{database_sql}]")
 
+        print(
+            f"Restoring database '{config['database']}' "
+            f"from '{backup_file}'..."
+        )
         cursor.execute(f"""
             RESTORE DATABASE [{database_sql}]
             FROM DISK = N'{backup_file_sql}'
@@ -71,6 +91,10 @@ def restore_database(backup_name):
         while cursor.nextset():
             pass
 
+        print(f"Database '{config['database']}' restored successfully.")
+        print(
+            f"Changing database owner to '{config['login_name']}'..."
+        )
         cursor.execute(f"""
             USE [{database_sql}]
             EXEC sp_changedbowner N'{owner_sql}', true
@@ -79,5 +103,10 @@ def restore_database(backup_name):
         while cursor.nextset():
             pass
 
+        print(
+            f"Database owner changed to '{config['login_name']}'."
+        )
+
     finally:
         connection.close()
+        print("SQL Server connection closed.")

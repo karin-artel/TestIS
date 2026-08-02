@@ -62,7 +62,7 @@ def login_to_app(process_id, config, timeout=30):
     print("Filling login name...")
     set_text_field_by_label(login_window, "Login name:", config["login_name"])
     print("Filling password...")
-    set_text_field_by_label(login_window, "Password:", config["password"])
+    set_text_field_by_label(login_window, "Password:", config["sql_password"])
     print("Submitting login...")
     press_key(0x0D)  # ENTER
     print("Login submitted")
